@@ -273,7 +273,7 @@ async def main_menu():
             pending_route_actions = db.get_routes_by_statuses([RouteStatus.PENDING, RouteStatus.IN_PROGRESS])[0].actions
             str_actions = [action.action_name if action.action_name else "No pending routes" for action in
                            pending_route_actions]
-            str_actions = "Route Actions: " + ", ".join(str_actions)
+            str_actions = "Route Actions: " + ", ".join(set(str_actions))
         except (IndexError, OperationalError):
             str_actions = "No pending routes"
 

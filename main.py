@@ -2,7 +2,7 @@ import asyncio
 import signal
 import sys
 
-import sqlalchemy
+from sqlalchemy.exc import OperationalError
 
 from core.cli import main_menu, load_presets
 from core.account_manager import AccountManager
@@ -72,7 +72,7 @@ async def main():
             try:
                 rerun_failed = False
                 selected_preset = await main_menu()
-            except sqlalchemy.exc.OperationalError as e:
+            except OperationalError as e:
                 if "no such table" in str(e):
                     logger_.warning(f"No tables in database, creating tables...")
                     db.init_db()
@@ -88,13 +88,6 @@ async def main():
                 pass
             elif selected_preset == "Rerun Failed Actions":
                 rerun_failed = True
-            else:
-                if selected_preset["name"] == 'Create Signature': # or selected_preset["name"] == 'МОНАД ЕБАТЕЛЬ':
-                    socials_only = True
-                else:
-                    socials_only = False
-
-                await account_manager.generate_new_routes_for_preset(selected_preset, socials_only)
 
             if settings.delays.start_hour != 0 or settings.delays.start_minute != 0:
                 while True:
