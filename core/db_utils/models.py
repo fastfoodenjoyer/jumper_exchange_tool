@@ -13,14 +13,6 @@ class RouteStatus(enum.Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
-# Таблица для связи many-to-many между Account и Route
-# account_route = Table(
-#     'account_route',
-#     Base.metadata,
-#     Column('account_id', Integer, ForeignKey('accounts.id')),
-#     Column('route_id', Integer, ForeignKey('routes.id'))
-# )
-
 
 class Account(Base):
     __tablename__ = 'accounts'
@@ -33,13 +25,10 @@ class Account(Base):
     chrome_version: Mapped[str] = mapped_column(nullable=True)
 
     # blockchains
-    # evm_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
     evm_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=True)
     evm_address: Mapped[str] = mapped_column(nullable=True)
-    # aptos_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
     aptos_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=True)
     aptos_address: Mapped[str] = mapped_column(nullable=True)
-    # aptos_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
     solana_private_key: Mapped[str] = mapped_column(unique=True, index=True, nullable=True)
     solana_address: Mapped[str] = mapped_column(nullable=True)
 
@@ -53,8 +42,6 @@ class Account(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(), nullable=False)
     updated_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    # Связь many-to-many с Route
-    # routes = relationship('Route', secondary=account_route, back_populates='accounts')
     # Связь one-to-one с Route
     route = relationship('Route', back_populates='account', uselist=False)
 
@@ -106,7 +93,6 @@ class RouteAction(Base):
     action_name: Mapped[str] = mapped_column(nullable=True)
     route_id: Mapped[int] = mapped_column(ForeignKey('routes.id', ondelete='CASCADE'), nullable=False)
     action_type: Mapped[str] = mapped_column(nullable=False)
-    # action_params: Mapped[str] = mapped_column(nullable=False)
     params_id: Mapped[int] = mapped_column(ForeignKey('action_params.id'), nullable=False, default=1)
     status: Mapped[RouteStatus] = mapped_column(default=RouteStatus.PENDING, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(), nullable=False)

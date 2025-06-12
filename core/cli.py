@@ -275,6 +275,7 @@ async def main_menu():
                            pending_route_actions]
             str_actions = "Route Actions: " + ", ".join(set(str_actions))
         except (IndexError, OperationalError):
+            db.init_db()
             str_actions = "No pending routes"
 
         choice = await questionary.select(

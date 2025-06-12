@@ -2,7 +2,9 @@ import json
 from typing import Literal
 import uuid
 
+from web3 import Web3
 from web3.contract import AsyncContract
+from web3.exceptions import ContractLogicError
 from web3.types import TxParams
 
 from core.evm_contracts import EVMContracts
@@ -151,127 +153,136 @@ class JumperExchange(BaseEVMTaskClass["JumperExchange"]):
                     # continue
 
                 # self._logger.debug(typed_data)
-                data = typed_data[0]
-                if "permit2" in data["domain"]["name"].lower():
-                    approve_contract = data["message"]["spender"]
-                    approve = await self.network_client.transactions.approve_interface(token_from,
-                                                                                       approve_contract,
-                                                                                       from_amount)
-                    if approve:
-                        # self._logger.debug(f"Signing data: {data}")
-                        selected_step = steps[0]
-                        for index, step in enumerate(steps):
-                            self._logger.info(f"step tool {index} {step['tool']}")
-                            if step["tool"] == tool_from_quote:
-                                selected_step = step
-
-                        if selected_step["tool"] != tool_key:
-                            self._logger.warning(f"tool_key: {tool_key} != selected_step tool: {selected_step["tool"]}")
-                            # await log_sleep(self)
-                            # continue
-
-                        assert transaction_data_dict["exchange"] == selected_step["tool"]
-                        if await self._create_or_finish_transaction(**transaction_data_dict):
-                            step_transaction = await self._request_swap_data(selected_step)
-                            _diamondCalldata1 = step_transaction["data"]
-                        else:
-                            await log_sleep(self)
-                            continue
-
-                        contract: AsyncContract = await self.network_client.contracts.get(contract=approve_contract,
-                                                                            abi=EVMContracts.jumper_diamond_proxy_abi)
-                        permit_nonce = await self._get_permit_nonce(contract)
-                        structured_message = {
-                                "domain": {
-                                    "name": "Permit2",
-                                    "chainId": self.network_client.network.chain_id,
-                                    "verifyingContract": data["domain"]["verifyingContract"]
-                                },
-                                "message": {
-                                    "permitted": {
-                                        "token": from_token_address,
-                                        "amount": str(from_amount.Wei)
-                                    },
-                                    "spender": data["message"]["spender"],
-                                    "nonce": str(permit_nonce),
-                                    "deadline": data["message"]["deadline"][:-3]
-                                },
-                                "primaryType": "PermitTransferFrom",
-                                "types": {
-                                    "EIP712Domain": [
-                                        {
-                                            "name": "name",
-                                            "type": "string"
-                                        },
-                                        {
-                                            "name": "chainId",
-                                            "type": "uint256"
-                                        },
-                                        {
-                                            "name": "verifyingContract",
-                                            "type": "address"
-                                        }
-                                    ],
-                                    "TokenPermissions": [
-                                        {
-                                            "name": "token",
-                                            "type": "address"
-                                        },
-                                        {
-                                            "name": "amount",
-                                            "type": "uint256"
-                                        }
-                                    ],
-                                    "PermitTransferFrom": [
-                                        {
-                                            "name": "permitted",
-                                            "type": "TokenPermissions"
-                                        },
-                                        {
-                                            "name": "spender",
-                                            "type": "address"
-                                        },
-                                        {
-                                            "name": "nonce",
-                                            "type": "uint256"
-                                        },
-                                        {
-                                            "name": "deadline",
-                                            "type": "uint256"
-                                        }
-                                    ]
-                                }
-                            }
-
-                        permit_signed = await self.network_client.transactions.sign_message(
-                            typed_data=structured_message, full_message=True)
-
-                        self._logger.success(f"Signed permit data for swap: {structured_message}")
-                        signature = "0x" + permit_signed.signature.hex()
-                        self._logger.debug(f"Signed permit data for swap: {signature}")
-
-                        permit_args = TxArgs(
-                            permitted=(from_token_address, int(from_amount.Wei)),
-                            nonce=int(structured_message["message"]["nonce"]),
-                            deadline=int(structured_message["message"]["deadline"]),
-                        )
-
-                        args = TxArgs(_diamondCalldata=bytes.fromhex(_diamondCalldata1[2:]),
-                                      _permit=permit_args.tuple(),
-                                      _signature=permit_signed.signature)
-                        # self._logger.debug(f"My args: {args}")
-
-                        swap_data = contract.encode_abi("callDiamondWithPermit2", args.tuple())
-                        tx_params = TxParams(
-                            to=contract.address,
-                            data=swap_data,
-                            # data=HexStr("0x0193b9fc00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006846ffea00000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000544733214a35247e8e75301d0a3c6d35295fea3013c44a80817a515544a7dc7e6da954ad3de00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000096f193844ebae791aa90d59bb9e12215d7b18bab0000000000000000000000000000000000000000000000000006f71b9a628e6c0000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000f6a756d7065722e65786368616e67650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a30783030303030303030303030303030303030303030303030303030303030303030303030303030303000000000000000000000000000000000000000000000000000000000000000000000ac4c6e212a361c968f1725b4d055b47e63f80b75000000000000000000000000ac4c6e212a361c968f1725b4d055b47e63f80b75000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004c4b4000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002c45f3bd1c8000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000001231deb6f5749ef6ce6943a275a1d3e7486f4eae000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000006f71b9a628e6b0000000000000000000000003ced11c610556e5292fbc2e75d68c3899098c14c00000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001a46be92b89000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b40000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee00000000000000000000000000000000000000000000000000070011734809590000000000000000000000001231deb6f5749ef6ce6943a275a1d3e7486f4eae000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007101833589fcd6edb6e08f4c7c32d4f71b54bda0291301ffff0172ab388e2e2f6facef59e3c3fa2c4e29011c2d38003ced11c610556e5292fbc2e75d68c3899098c14c0001420000000000000000000000000000000000000601ffff02003ced11c610556e5292fbc2e75d68c3899098c14c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004148b0fcdf25785b1be71eeea989ec456a0b970182c653e7cb91a991d71cc693415b1d63cc46c354df4e985cb7ba1a8953718ace87967f3415c0abe3effe3d86b21b00000000000000000000000000000000000000000000000000000000000000"),
-                            value=0
-                        )
-                        return tx_params
-
-                else:
+                try:
+                    data = typed_data[0]
+                except IndexError:
                     raise Exception(f"Permit contract not found: {typed_data}")
+                # for t_data in typed_data:
+                #     if "permit2" in t_data["domain"]["name"].lower():
+                #         data = t_data
+                #         break
+                # else:
+                #     raise Exception(f"Permit contract not found: {typed_data}")
+
+                # if "permit2" in data["domain"]["name"].lower():
+                # if "permit" in data["types"]["name"].lower():
+                approve_contract = data["message"]["spender"]
+                approve = await self.network_client.transactions.approve_interface(token_from,
+                                                                                   approve_contract,
+                                                                                   from_amount)
+                if approve:
+                    # self._logger.debug(f"Signing data: {data}")
+                    selected_step = steps[0]
+                    for index, step in enumerate(steps):
+                        self._logger.info(f"step tool {index} {step['tool']}")
+                        if step["tool"] == tool_from_quote:
+                            selected_step = step
+
+                    if selected_step["tool"] != tool_key:
+                        self._logger.warning(f"tool_key: {tool_key} != selected_step tool: {selected_step["tool"]}")
+                        # await log_sleep(self)
+                        # continue
+
+                    assert transaction_data_dict["exchange"] == selected_step["tool"]
+                    if await self._create_or_finish_transaction(**transaction_data_dict):
+                        step_transaction = await self._request_swap_data(selected_step)
+                        _diamondCalldata1 = step_transaction["data"]
+                    else:
+                        await log_sleep(self)
+                        continue
+
+                    contract: AsyncContract = await self.network_client.contracts.get(contract=approve_contract,
+                                                                        abi=EVMContracts.jumper_diamond_proxy_abi)
+                    permit_nonce = await self._get_permit_nonce(contract)
+                    structured_message = {
+                            "domain": {
+                                "name": "Permit2",
+                                "chainId": self.network_client.network.chain_id,
+                                "verifyingContract": data["domain"]["verifyingContract"]
+                            },
+                            "message": {
+                                "permitted": {
+                                    "token": from_token_address,
+                                    "amount": str(from_amount.Wei)
+                                },
+                                "spender": data["message"]["spender"],
+                                "nonce": str(permit_nonce),
+                                "deadline": data["message"]["deadline"][:-3]
+                            },
+                            "primaryType": "PermitTransferFrom",
+                            "types": {
+                                "EIP712Domain": [
+                                    {
+                                        "name": "name",
+                                        "type": "string"
+                                    },
+                                    {
+                                        "name": "chainId",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "name": "verifyingContract",
+                                        "type": "address"
+                                    }
+                                ],
+                                "TokenPermissions": [
+                                    {
+                                        "name": "token",
+                                        "type": "address"
+                                    },
+                                    {
+                                        "name": "amount",
+                                        "type": "uint256"
+                                    }
+                                ],
+                                "PermitTransferFrom": [
+                                    {
+                                        "name": "permitted",
+                                        "type": "TokenPermissions"
+                                    },
+                                    {
+                                        "name": "spender",
+                                        "type": "address"
+                                    },
+                                    {
+                                        "name": "nonce",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "name": "deadline",
+                                        "type": "uint256"
+                                    }
+                                ]
+                            }
+                        }
+
+                    permit_signed = await self.network_client.transactions.sign_message(
+                        typed_data=structured_message, full_message=True)
+
+                    self._logger.success(f"Signed permit data for swap: {structured_message}")
+                    signature = "0x" + permit_signed.signature.hex()
+                    self._logger.debug(f"Signed permit data for swap: {signature}")
+
+                    permit_args = TxArgs(
+                        permitted=(from_token_address, int(from_amount.Wei)),
+                        nonce=int(structured_message["message"]["nonce"]),
+                        deadline=int(structured_message["message"]["deadline"]),
+                    )
+
+                    args = TxArgs(_diamondCalldata=bytes.fromhex(_diamondCalldata1[2:]),
+                                  _permit=permit_args.tuple(),
+                                  _signature=permit_signed.signature)
+                    # self._logger.debug(f"My args: {args}")
+
+                    swap_data = contract.encode_abi("callDiamondWithPermit2", args.tuple())
+                    tx_params = TxParams(
+                        to=contract.address,
+                        data=swap_data,
+                        # data=HexStr("0x0193b9fc00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006846ffea00000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000544733214a35247e8e75301d0a3c6d35295fea3013c44a80817a515544a7dc7e6da954ad3de00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000096f193844ebae791aa90d59bb9e12215d7b18bab0000000000000000000000000000000000000000000000000006f71b9a628e6c0000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000f6a756d7065722e65786368616e67650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a30783030303030303030303030303030303030303030303030303030303030303030303030303030303000000000000000000000000000000000000000000000000000000000000000000000ac4c6e212a361c968f1725b4d055b47e63f80b75000000000000000000000000ac4c6e212a361c968f1725b4d055b47e63f80b75000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004c4b4000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002c45f3bd1c8000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000001231deb6f5749ef6ce6943a275a1d3e7486f4eae000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000006f71b9a628e6b0000000000000000000000003ced11c610556e5292fbc2e75d68c3899098c14c00000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001a46be92b89000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000000000000000000000000000000000000004c4b40000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee00000000000000000000000000000000000000000000000000070011734809590000000000000000000000001231deb6f5749ef6ce6943a275a1d3e7486f4eae000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007101833589fcd6edb6e08f4c7c32d4f71b54bda0291301ffff0172ab388e2e2f6facef59e3c3fa2c4e29011c2d38003ced11c610556e5292fbc2e75d68c3899098c14c0001420000000000000000000000000000000000000601ffff02003ced11c610556e5292fbc2e75d68c3899098c14c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004148b0fcdf25785b1be71eeea989ec456a0b970182c653e7cb91a991d71cc693415b1d63cc46c354df4e985cb7ba1a8953718ace87967f3415c0abe3effe3d86b21b00000000000000000000000000000000000000000000000000000000000000"),
+                        value=0
+                    )
+                    return tx_params
+
                 break
 
             except CustomRequestException as e:
@@ -299,13 +310,13 @@ class JumperExchange(BaseEVMTaskClass["JumperExchange"]):
             from_token_address = token_from.address
         else:
             from_token_address = CommonValues.ZeroAddress \
-                if token_from.lower().strip() == "native" else token_from.lower().strip()
+                if token_from.lower().strip() == "native" else Web3.to_checksum_address(token_from.strip())
 
         if isinstance(token_from, RawContract):
             to_token_address = token_to.address
         else:
             to_token_address = CommonValues.ZeroAddress \
-                if token_to.lower().strip() == "native" else token_to.lower().strip()
+                if token_to.lower().strip() == "native" else Web3.to_checksum_address(token_to.strip())
 
         chain_id = self.network_client.network.chain_id
 
@@ -319,10 +330,14 @@ class JumperExchange(BaseEVMTaskClass["JumperExchange"]):
 
             except CustomRequestException as e:
                 self._logger.error(f"Swap attempt {attempt}: CustomRequestException: {e.status_code}, {e.text}")
+                await log_sleep(self, settings.general.retry_delay)
 
             except EXTERNAL_REQUEST_EXCEPTIONS as e:
                 self._logger.error(f"{excname(e)} {str(e)}")
                 await self.controller.change_proxy()
+
+            except ContractLogicError as e:
+                self._logger.error(f"Swap attempt {attempt}: {excname(e)} {str(e)}")
 
 
     async def _perform_swap(self, str_amount, from_token_address, to_token_address, chain_id,
@@ -489,20 +504,19 @@ class JumperExchange(BaseEVMTaskClass["JumperExchange"]):
         url = "https://api.jumper.exchange/p/lifi/relayer/quote"
         def handler(response):
             try:
-                return response.json()
+                if response.json()["status"] == "ok":
+                    return response.json()
             except json.decoder.JSONDecodeError:
                 raise CustomRequestException(response)
 
-        resp = await self.requests.get(url, params=params, additional_headers=headers, resp_handler=handler)
-        if resp["status"] == "ok":
-            tool = resp['data']['tool']
-            # self._logger.debug(f"Quote: {resp}")
-            # self._logger.info(f"tool from quote: {tool}")
-            typed_data = resp["data"]["typedData"]
-            swap_data = resp["data"]["transactionRequest"]
-            return typed_data, swap_data, tool
-
-        return {}, {}
+        resp = await self.requests.get(url, [200, 204], params=params,
+                                       additional_headers=headers, resp_handler=handler)
+        tool = resp["data"]["tool"]
+        # self._logger.debug(f"Quote: {resp}")
+        # self._logger.info(f"tool from quote: {tool}")
+        typed_data = resp["data"]["typedData"]
+        swap_data = resp["data"]["transactionRequest"]
+        return typed_data, swap_data, tool
 
 
     async def get_transaction_status(self, from_chain: str, to_chain: str, bridge: str, tx_hash: str) -> dict:

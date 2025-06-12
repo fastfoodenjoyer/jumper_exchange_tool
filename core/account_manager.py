@@ -30,18 +30,18 @@ class AccountManager:
         self.logger = get_logger(class_name=self.__class__.__name__)
         self.tg_notificator = Notificator(LogContext.get())
 
-    def load_accounts_from_excel(self, socials_only):
+    def load_accounts_from_excel(self):
         columns = dataclasses.asdict(settings.private)
         excel_manager = ExcelManager()
 
-        accounts, spare_proxies = excel_manager.load_accounts(socials_only=socials_only ,**columns)
+        accounts, spare_proxies = excel_manager.load_accounts(**columns)
         db.add_accounts(accounts, spare_proxies)
 
-    async def generate_new_routes_for_preset(self, preset: dict[str, Path | str], socials_only: bool):
+    async def generate_new_routes_for_preset(self, preset: dict[str, Path | str]):
         preset_data = read_toml(preset["path"])
         db.delete_all_routes()
 
-        self.load_accounts_from_excel(socials_only)
+        self.load_accounts_from_excel()
 
         db.generate_routes_for_accounts(preset_data)
 

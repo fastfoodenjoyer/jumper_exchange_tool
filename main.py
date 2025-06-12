@@ -69,16 +69,8 @@ async def main():
 
         
         while True:
-            try:
-                rerun_failed = False
-                selected_preset = await main_menu()
-            except OperationalError as e:
-                if "no such table" in str(e):
-                    logger_.warning(f"No tables in database, creating tables...")
-                    db.init_db()
-                    continue
-                else:
-                    raise e
+            rerun_failed = False
+            selected_preset = await main_menu()
 
             if selected_preset is None:
                 logger_.info("Exiting application")
@@ -88,6 +80,8 @@ async def main():
                 pass
             elif selected_preset == "Rerun Failed Actions":
                 rerun_failed = True
+            else:
+                await account_manager.generate_new_routes_for_preset(selected_preset)
 
             if settings.delays.start_hour != 0 or settings.delays.start_minute != 0:
                 while True:

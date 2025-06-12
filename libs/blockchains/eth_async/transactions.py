@@ -624,7 +624,7 @@ class Transactions(NetworkClientAware):
         )
 
         if amount.Wei <= approved.Wei:
-            self.logger.success(f"{approved} {token_symbol} already approved")
+            self.logger.success(f"{approved} {token_symbol} already approved for {spender}")
             return True
 
         tx = await self.client.transactions.approve(

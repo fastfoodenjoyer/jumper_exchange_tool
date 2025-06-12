@@ -137,24 +137,27 @@ class Executioner:
         if "swap" in action_type:
             chain_swap_params = swap_params.get(action_network)
             for token_params in chain_swap_params:
-                swap_amount = await self.get_evm_swap_amount(jumper.network_client,
-                                                             token_params["from_token"], token_params["amount"])
-                result_string = f"{action_network} from {token_params["from_token"]} to {token_params["to_token"]}"
-                results[result_string] = await jumper.swap(swap_amount,
-                                         token_params["from_token"],
-                                         token_params["to_token"],
-                                         token_params["slippage"] / 100)
-
-                if token_params["swap_mode"] == "to_and_from":
-                    if token_params["to_token"] == "native":
-                        raise Exception(f"You are trying to swap back all native into token {token_params['from_token']}")
-
-                    swap_amount = await jumper.network_client.wallet.balance(token_params["to_token"])
-                    result_string = f"{action_network} from {token_params["to_token"]} to {token_params["from_token"]}"
+                try:
+                    swap_amount = await self.get_evm_swap_amount(jumper.network_client,
+                                                                 token_params["from_token"], token_params["amount"])
+                    result_string = f"{action_network} from {token_params["from_token"]} to {token_params["to_token"]}"
                     results[result_string] = await jumper.swap(swap_amount,
-                                                               token_params["to_token"],
-                                                               token_params["from_token"],
-                                                               token_params["slippage"] / 100)
+                                             token_params["from_token"],
+                                             token_params["to_token"],
+                                             token_params["slippage"] / 100)
+
+                    if token_params["swap_mode"] == "to_and_from":
+                        if token_params["to_token"] == "native":
+                            raise Exception(f"You are trying to swap back all native into token {token_params['from_token']}")
+
+                        swap_amount = await jumper.network_client.wallet.balance(token_params["to_token"])
+                        result_string = f"{action_network} from {token_params["to_token"]} to {token_params["from_token"]}"
+                        results[result_string] = await jumper.swap(swap_amount,
+                                                                   token_params["to_token"],
+                                                                   token_params["from_token"],
+                                                                   token_params["slippage"] / 100)
+                except InsufficientFundsException as e:
+                    self.logger.error(f"{excname(e)} {str(e)}")
 
         return results
 
@@ -163,6 +166,9 @@ class Executioner:
         token = token if token.lower() != "native" else None
         decimals = await network_client.transactions.get_decimals(token) if token else 18
         balance = await network_client.wallet.balance(token)
+        self.logger.debug(f"Token balance: {balance}, token: {token}")
+        if balance.Ether < 0.00000001:
+            raise InsufficientFundsException(f"Insufficient funds for token {token}, balance is {balance}")
 
         if all(isinstance(amount, str) for amount in swap_amounts):
             swap1 = int(swap_amounts[0])
