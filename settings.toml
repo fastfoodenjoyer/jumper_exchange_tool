@@ -1,0 +1,346 @@
+[general]
+number_of_retries = 3
+retry_delay = 15
+timeout = 15
+SHUFFLE_ACCOUNTS = true
+SHUFFLE_ACTIONS = true
+
+[delays]
+accounts_delay = [300, 500]  # задержка между кошельками в потоке
+action_delay = [100, 150]  # задержка между действиями одного кошелька
+# (действие в данном контексте - это каждая строка или ее повторение из раздела [functions] в пресете)
+flow_delay = [1000, 2000]  # задержка между потоками
+
+start_time = "00:00" # Время старта отработки по локальному времени устройства запуска, при 00:00 функция отключена
+
+[flow]
+wallets_per_flow = 1  # количество кошельков в одном потоке
+
+[gas]
+gas_control = true
+gas_chain_name = "Ethereum"
+maximum_gwei = 7
+gas_retry_delay = 30
+
+gas_price_multiplier = 1.2
+gas_limit_multiplier = 1.3
+
+[logger]
+rotation = "2 MB"
+retention = "1 week"
+debug_logging = false
+log_to_file = true
+show_full_address = false
+
+[telegram]
+send_notifications = false
+bot_key = ""
+chat_id = ""
+
+[captcha]
+# https://2captcha.com/enterpage
+two_captcha_api_key = ""
+# https://dashboard.capsolver.com/dashboard/overview
+capsolver_api_key = ""
+# https://capmonster.cloud
+capmonster_api_key = ""
+# https://24captcha.online/dashboard/
+captcha24_api_key = "" # используется только для hCaptcha
+# https://bestcaptchasolver.com/ref/67c80caed0279c6ade68e09f
+bestcaptcha_api_key = ""
+# https://razorcap.xyz/dashboard
+razorcap_api_key = ""
+
+[CEX]
+[CEX.okx]
+api_key = ""
+api_secret_key = ""
+passphrase = ""
+
+[CEX.bitget]
+api_key = ""
+api_secret_key = ""
+passphrase = ""
+
+[CEX.mexc]
+api_key = ""
+api_secret_key = ""
+passphrase = ""
+
+[AI]
+[[AI.chat_gpt]]
+chat_gpt_api_key = ""
+model = 'gpt-4o-mini' # я тестировал на этой
+# ['o3-mini', 'o3-mini-2025-01-31', 'o1', 'o1-2024-12-17', 'o1-preview', 'o1-preview-2024-09-12', 'o1-mini',
+# 'o1-mini-2024-09-12', 'gpt-4o', 'gpt-4o-2024-11-20', 'gpt-4o-2024-08-06', 'gpt-4o-2024-05-13', 'gpt-4o-audio-preview',
+# 'gpt-4o-audio-preview-2024-10-01', 'gpt-4o-audio-preview-2024-12-17', 'gpt-4o-mini-audio-preview',
+# 'gpt-4o-mini-audio-preview-2024-12-17', 'gpt-4o-search-preview', 'gpt-4o-mini-search-preview',
+# 'gpt-4o-search-preview-2025-03-11', 'gpt-4o-mini-search-preview-2025-03-11', 'chatgpt-4o-latest', 'gpt-4o-mini',
+# 'gpt-4o-mini-2024-07-18', 'gpt-4-turbo', 'gpt-4-turbo-2024-04-09', 'gpt-4-0125-preview', 'gpt-4-turbo-preview',
+# 'gpt-4-1106-preview', 'gpt-4-vision-preview', 'gpt-4', 'gpt-4-0314', 'gpt-4-0613', 'gpt-4-32k', 'gpt-4-32k-0314',
+# 'gpt-4-32k-0613', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-3.5-turbo-0301', 'gpt-3.5-turbo-0613', 'gpt-3.5-turbo-1106',
+# 'gpt-3.5-turbo-0125', 'gpt-3.5-turbo-16k-0613']
+
+[networks_rpc]
+Ethereum = [
+    { url = "https://eth.llamarpc.com", max_retries = 5 },
+    { url = "https://ethereum.publicnode.com", max_retries = 3 },
+]
+
+Linea = [
+    { url = "https://rpc.linea.build", max_retries = 5 },
+    { url = "https://1rpc.io/linea", max_retries = 3 }
+]
+
+Avalanche = [
+    { url = "https://ava-mainnet.public.blastapi.io/ext/bc/C/rpc", max_retries = 5 },
+    { url = "https://avalanche.drpc.org", max_retries = 5 },
+]
+
+PolygonZKEVM = [
+    { url = "https://zkevm-rpc.com", max_retries = 5 },
+    { url = "https://polygon-zkevm.drpc.org", max_retries = 5 },
+]
+
+Fantom = [
+    { url = "https://rpcapi.fantom.network", max_retries = 5 },
+    { url = "https://rpc3.fantom.network", max_retries = 5 },
+    { url = "https://rpc2.fantom.network", max_retries = 5 },
+]
+
+Moonriver = [
+    { url = "https://moonriver.api.onfinality.io/public", max_retries = 5 },
+    { url = "https://moonriver-rpc.dwellir.com", max_retries = 5 },
+]
+
+Moonbeam = [
+    { url = "https://moonbeam.drpc.org", max_retries = 5 },
+    { url = "https://rpc.api.moonbeam.network", max_retries = 5 },
+]
+
+Fuse = [
+    { url = "https://fuse.drpc.org", max_retries = 5 },
+    { url = "https://fuse.liquify.com", max_retries = 5 },
+]
+
+Boba = [
+    { url = "https://boba-eth.drpc.org", max_retries = 5 },
+    { url = "https://boba-ethereum.gateway.tenderly.co", max_retries = 5 },
+]
+
+Metis = [
+    { url = "https://metis.drpc.org", max_retries = 5 },
+    { url = "https://metis-mainnet.public.blastapi.io", max_retries = 5 },
+]
+
+Aurora = [
+    { url = "https://mainnet.aurora.dev", max_retries = 5 },
+    { url = "https://aurora.drpc.org", max_retries = 5 },
+]
+
+Sei = [
+    { url = "https://sei.drpc.org", max_retries = 5 },
+    { url = "https://evm-rpc.sei-apis.com", max_retries = 5 },
+]
+
+ImmutableZKEVM = [
+    { url = "https://rpc.immutable.com", max_retries = 5 },
+    { url = "https://immutable-zkevm.drpc.org", max_retries = 5 },
+]
+
+Sonic = [
+    { url = "https://rpc.soniclabs.com", max_retries = 5 },
+    { url = "https://sonic.drpc.org", max_retries = 5 },
+]
+
+Gravity = [
+    { url = "https://rpc.gravity.xyz", max_retries = 5 },
+]
+
+Taiko = [
+    { url = "https://taiko-rpc.publicnode.com", max_retries = 5 },
+    { url = "https://rpc.mainnet.taiko.xyz", max_retries = 5 },
+]
+
+Swellchain = [
+    { url = "https://swell-mainnet.alt.technology", max_retries = 5 },
+]
+
+Corn = [
+    { url = "https://mainnet.corn-rpc.com", max_retries = 5 },
+    { url = "https://maizenet-rpc.usecorn.com", max_retries = 5 },
+]
+
+Cronos = [
+    { url = "https://cronos-evm-rpc.publicnode.com", max_retries = 5 },
+    { url = "https://cronos.drpc.org", max_retries = 5 },
+]
+
+Abstract = [
+    { url = "https://api.mainnet.abs.xyz", max_retries = 5 },
+]
+
+Rootstock = [
+    { url = "https://rootstock-mainnet.public.blastapi.io", max_retries = 5 },
+    { url = "https://public-node.rsk.co", max_retries = 5 },
+]
+
+Apechain = [
+    { url = "https://rpc.apechain.com", max_retries = 5 },
+    { url = "https://apechain.drpc.org", max_retries = 5 },
+]
+
+WorldChain = [
+    { url = "https://worldchain-mainnet.g.alchemy.com/public", max_retries = 5 },
+    { url = "https://worldchain.drpc.org", max_retries = 5 },
+]
+
+XDC = [
+    { url = "https://rpc.xinfin.network", max_retries = 5 },
+    { url = "https://rpc.xdc.org", max_retries = 5 },
+]
+
+Mantle = [
+    { url = "https://rpc.mantle.xyz", max_retries = 5 },
+    { url = "https://mantle-mainnet.public.blastapi.io", max_retries = 5 },
+]
+
+Superposition = [
+    { url = "https://rpc.superposition.so", max_retries = 5 },
+]
+
+BOB = [
+    { url = "https://rpc.gobob.xyz", max_retries = 5 },
+    { url = "https://bob.drpc.org", max_retries = 5 },
+]
+
+Lens = [
+    { url = "https://rpc.lens.xyz", max_retries = 5 },
+    { url = "https://lens.drpc.org", max_retries = 5 },
+]
+
+Berachain = [
+    { url = "https://berachain.drpc.org", max_retries = 5 },
+    { url = "https://rpc.berachain.com", max_retries = 5 },
+]
+
+Kaia = [
+    { url = "https://public-en.node.kaia.io", max_retries = 5 },
+    { url = "https://kaia.blockpi.network/v1/rpc/public", max_retries = 5 },
+]
+
+HyperEVM = [
+    { url = "https://rpc.hyperliquid.xyz/evm", max_retries = 5 },
+    { url = "https://rpc.hyperlend.finance", max_retries = 5 },
+]
+
+Polygon = [
+    { url = "https://polygon-rpc.com", max_retries = 5 },
+    { url = "https://polygon.rpc.subquery.network/public", max_retries = 5 },
+]
+
+Base = [
+    { url = "https://base.llamarpc.com", max_retries = 5 },
+    { url = "https://1rpc.io/base", max_retries = 3 }
+]
+
+Blast = [
+    { url = "https://blast.blockpi.network/v1/rpc/public", max_retries = 5 },
+    { url = "https://rpc.blast.io", max_retries = 3 }
+]
+
+Optimism = [
+    { url = "https://optimism.llamarpc.com", max_retries = 5 },
+    { url = "https://1rpc.io/op", max_retries = 3 }
+]
+
+Arbitrum = [
+    { url = "https://arb1.arbitrum.io/rpc", max_retries = 5 },
+]
+
+Zksync = [
+    { url = "https://mainnet.era.zksync.io", max_retries = 5 },
+    { url = "https://zksync.meowrpc.com", max_retries = 3 }
+]
+
+BSC = [
+    { url = "https://bsc-dataseed.binance.org", max_retries = 5 },
+]
+
+Celo = [
+    { url = "https://1rpc.io/celo", max_retries = 3 },
+    { url = "https://forno.celo.org", max_retries = 3 },
+]
+
+Cyber = [
+    { url = "https://rpc.cyber.co", max_retries = 3 },
+    { url = "https://cyber.alt.technology", max_retries = 5 },
+]
+
+Gnosis = [
+    { url = "https://0xrpc.io/gno", max_retries = 3 },
+    { url = "https://gnosis-rpc.publicnode.com", max_retries = 3 }
+]
+
+opBNB = [
+    { url = "https://opbnb-rpc.publicnode.com", max_retries = 3 },
+    { url = "https://opbnb-mainnet-rpc.bnbchain.org", max_retries = 5 },
+    { url = "https://1rpc.io/opbnb", max_retries = 3 }
+]
+
+Scroll = [
+    { url = "https://scroll.drpc.org", max_retries = 3 },
+    { url = "https://1rpc.io/scroll", max_retries = 5 },
+    { url = "https://scroll-rpc.publicnode.com", max_retries = 3 }
+]
+
+ZetaChain = [
+    { url = "https://zetachain-mainnet.public.blastapi.io", max_retries = 3 },
+    { url = "https://zeta-chain.drpc.org", max_retries = 5 },
+    { url = "https://zetachain-evm.blockpi.network/v1/rpc/public", max_retries = 3 }
+]
+
+Degen = [
+    { url = "https://rpc.degen.tips", max_retries = 3 }
+]
+
+Ink = [
+    { url = "https://rpc-qnd.inkonchain.com", max_retries = 3 },
+    { url = "https://ink.drpc.org", max_retries = 3 },
+]
+
+Mode = [
+    { url = "https://1rpc.io/mode", max_retries = 3 },
+    { url = "https://mode.drpc.org", max_retries = 3 },
+]
+
+Unichain = [
+    { url = "https://unichain.drpc.org", max_retries = 3 },
+    { url = "https://unichain-rpc.publicnode.com", max_retries = 3 },
+]
+
+Lisk = [
+    { url = "https://lisk.drpc.org", max_retries = 3 },
+    { url = "https://rpc.api.lisk.com", max_retries = 3 },
+]
+
+Soneium = [
+    { url = "https://rpc.soneium.org", max_retries = 3 },
+    { url = "https://soneium.drpc.org", max_retries = 3 },
+]
+
+
+[private] # do not change
+excel_path = "accounts_data.xlsx"
+sheet_name = "Main"
+name_column = "Name"
+on_off_column = "ON/OFF"
+evm_private_key_column = "EVM Private Key"
+aptos_private_key_column = "Aptos Private Key"
+solana_private_key_column = "Solana Private Key"
+proxy_column = "Proxy"
+twitter_token_column = "Twitter Token"
+ct0_column = "ct0"
+discord_token_column = "Discord Token"
+email_address_column = "Email Address"
+email_password_column = "Email Password"
