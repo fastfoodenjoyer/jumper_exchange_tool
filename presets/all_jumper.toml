@@ -10,20 +10,19 @@ description = "Put here your description"
 "jumper_swap_unichain" = [1, 3]
 
 
-[functions_params]
 # POSSIBLE NETWORKS:
 
 # ['Ethereum', 'Arbitrum', 'BSC', 'Polygon', 'Optimism', 'Base', 'Celo', 'opBNB', 'Scroll',
 # 'Gnosis', 'Linea', 'Blast', 'Zksync', 'Ink', 'Mode', 'Unichain', 'Lisk', 'Soneium', 'Avalanche',
 # 'PolygonZKEVM', 'Fantom', 'Moonriver', 'Moonbeam', 'Fuse', 'Boba', 'Metis', 'Aurora', 'Sei', 'ImmutableZKEVM',
-# 'Sonic', 'Gravity', 'Taiko', 'Swellchain', 'Corn', 'Cronos', 'Abstract', 'Rootstock', 'Apechain', 'WorldChain', .
+# 'Sonic', 'Gravity', 'Taiko', 'Swellchain', 'Corn', 'Cronos', 'Abstract', 'Rootstock', 'Apechain', 'WorldChain',
 # 'XDC', 'Mantle', 'Superposition', 'BOB', 'Lens', 'Berachain', 'Kaia', 'HyperEVM']
 
 # POSSIBLE SWAP MODES
 # to_and_from - swaps back all available amount
 # ['only_to', 'to_and_from']
 
-
+[functions_params]
 ### swap settings
 [[functions_params.swap.unichain]]
 from_token = "native"
